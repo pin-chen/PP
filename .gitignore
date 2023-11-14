@@ -1,2 +1,5 @@
 
 *.zip
+*.o
+*.ppm
+hw2/part2/mandelbrot
