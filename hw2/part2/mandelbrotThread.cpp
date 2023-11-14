@@ -4,17 +4,27 @@
 
 #include "CycleTimer.h"
 
+
+float x0_global, y0_global;
+//float x1_global, y1_global;
+float dx_global, dy_global;
+uint width_global;
+uint height_global;
+int maxIterations_global;
+int *output_global;
+uint numThreads_global;
+
 typedef struct
 {
-    float x0, y0;
+    //float x0, y0;
     //float x1, y1;
-    float dx, dy;
-    uint width;
-    uint height;
-    int maxIterations;
-    int *output;
+    //float dx, dy;
+    //uint width;
+    //uint height;
+    //int maxIterations;
+    //int *output;
     uint threadId;
-    uint numThreads;
+    //uint numThreads;
 } WorkerArgs;
 
 extern void mandelbrotSerial(
@@ -51,7 +61,7 @@ static inline uint mandel_thread(float c_re, float c_im, uint count)
 // Thread entrypoint.
 void workerThreadStart(WorkerArgs *const args)
 {
-    double startTime = CycleTimer::currentSeconds();
+
     // TODO FOR PP STUDENTS: Implement the body of the worker
     // thread here. Each thread could make a call to mandelbrotSerial()
     // to compute a part of the output image. For example, in a
@@ -62,31 +72,18 @@ void workerThreadStart(WorkerArgs *const args)
 
     //printf("Hello world from thread %d\n", args->threadId);
 
-    uint totalRows_per_thread = args->height / args->numThreads;
-    uint totalRows_leftover = args->height % args->numThreads;
-
-    uint startRow, endRow;
-    if (args->threadId < totalRows_leftover) {
-        startRow = args->threadId * totalRows_per_thread + args->threadId;
-        endRow = startRow + totalRows_per_thread + 1;
-    } else {
-        startRow = args->threadId * totalRows_per_thread + totalRows_leftover;
-        endRow = startRow + totalRows_per_thread;
-    }
-
-    for (uint j = startRow; j < endRow; j++)
+    for (uint j = args->threadId; j < height_global; j += numThreads_global)
     {
-        for (uint i = 0; i < args->width; ++i)
+        for (uint i = 0; i < width_global; ++i)
         {
-            float x = args->x0 + i * args->dx;
-            float y = args->y0 + j * args->dy;
+            float x = x0_global + i * dx_global;
+            float y = y0_global + j * dy_global;
 
-            uint index = (j * args->width + i);
-            args->output[index] = mandel_thread(x, y, args->maxIterations);
+            uint index = (j * width_global + i);
+            output_global[index] = mandel_thread(x, y, maxIterations_global);
         }
     }
-    double endTime = CycleTimer::currentSeconds();
-    printf("ThreadId[%u]:\t\t[%.3f] ms\n", args->threadId, (endTime - startTime) * 1000);
+
 }
 
 //
@@ -111,33 +108,39 @@ void mandelbrotThread(
     // Creates thread objects that do not yet represent a thread.
     std::thread workers[MAX_THREADS];
     WorkerArgs args[MAX_THREADS];
-    
-    // 
-    float dx = (x1 - x0) / width;
-    float dy = (y1 - y0) / height;
+
+    //
+    x0_global = x0;
+    y0_global = y0;
+    //float x1_global, y1_global;
+    dx_global = (x1 - x0) / width;
+    dy_global = (y1 - y0) / height;
+    width_global = width;
+    height_global = height;
+    maxIterations_global = maxIterations;
+    output_global = output;
+    numThreads_global = numThreads;
 
     for (int i = 0; i < numThreads; i++)
     {
         // TODO FOR PP STUDENTS: You may or may not wish to modify
         // the per-thread arguments here.  The code below copies the
         // same arguments for each thread
-        args[i].x0 = x0;
-        args[i].y0 = y0;
+        //args[i].x0 = x0;
+        //args[i].y0 = y0;
         //args[i].x1 = x1;
         //args[i].y1 = y1;
-        args[i].dx = dx;//
-        args[i].dy = dy;//
-        args[i].width = width;
-        args[i].height = height;
-        args[i].maxIterations = maxIterations;
-        args[i].numThreads = numThreads;
-        args[i].output = output;
+        //args[i].dx = dx;//
+        //args[i].dy = dy;//
+        //args[i].width = width;
+        //args[i].height = height;
+        //args[i].maxIterations = maxIterations;
+        //args[i].numThreads = numThreads;
+        //args[i].output = output;
 
         args[i].threadId = i;
     }
 
-
-    printf("--------------------------------------\n");
     // Spawn the worker threads.  Note that only numThreads-1 std::threads
     // are created and the main application thread is used as a worker
     // as well.
